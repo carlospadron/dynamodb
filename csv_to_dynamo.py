@@ -1,6 +1,7 @@
 import boto3
-import csv
+import pandas as pd
 import os
+from decimal import Decimal
 
 # Initialize a session using Amazon DynamoDB
 session = boto3.Session(
@@ -16,17 +17,26 @@ dynamodb = session.resource('dynamodb')
 table = dynamodb.Table('os_open_uprn')
 
 # Read CSV file
-with open('osopenuprn_202404.csv', mode='r', encoding='utf-8-sig') as file:
-    csv_reader = csv.DictReader(file)
-    n = 0
-    for row in csv_reader:
-        print(n)
-        # Write each row to DynamoDB
-        row = {k.lower(): v for k, v in row.items()}
-        row['uprn'] = int(row['uprn'])
-        #print(row)
-        table.put_item(Item=row)
-        n += 1
+data = pd.read_csv('osopenuprn_202404.csv')
+data.columns = data.columns.str.lower()
+data = data.to_dict(orient='records')
 
+
+# Convert float values to Decimal
+def convert_floats_to_decimals(item):
+    for key, value in item.items():
+        if isinstance(value, float):
+            item[key] = Decimal(str(value))
+    return item
+
+with table.batch_writer() as writer:
+    n = 0
+    for row in data:
+        print(f"Writing record {n} to DynamoDB table.")
+        row = convert_floats_to_decimals(row)
+        writer.put_item(Item=row)
+        n += 1
+    
 
 print("CSV data has been written to DynamoDB table.")
+#14:54
