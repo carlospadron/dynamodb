@@ -39,4 +39,3 @@ for chunk in pd.read_csv('osopenuprn_202404.csv', chunksize=chunk_size):
     print(f"Processed {n} rows.")
 
 print("CSV data has been written to DynamoDB table.")
-#15:26
